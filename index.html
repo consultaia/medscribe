@@ -862,8 +862,7 @@ const FB = {
   messagingSenderId:"528525093800",
   appId:"1:528525093800:web:6877cde022bb908f1acb9d"
 };
-const GKEY = "AIzaSyCIjfgW1MjD3Kr-MaFg1q_IZj9Q5W-NH5g";
-const GURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GKEY}`;
+const WORKER_URL = "https://consultaia.janan-almeida.workers.dev";
 
 firebase.initializeApp(FB);
 
@@ -996,12 +995,32 @@ async function onUpload(e) {
   e.target.value = '';
   if (!f) return;
   if (f.size > 80 * 1024 * 1024) { toast('Arquivo muito grande. Máx 80MB.'); return; }
-  await process(async () => {
-    setProc('Enviando áudio para IA...', 'Aguarde, isso leva alguns segundos');
-    const b64  = await toB64(f);
-    const mime = f.type || '';
-    return await geminiAudio(b64, mime, f.name);
-  });
+
+  showProc(true);
+  setProc('Transcrevendo áudio...', 'Aguarde, isso leva alguns segundos');
+
+  try {
+    const formData = new FormData();
+    formData.append('action', 'transcribe');
+    formData.append('audio', f, f.name || 'audio.m4a');
+
+    const res  = await fetch(WORKER_URL, { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    const raw    = data.evolution || '';
+    const parsed = parseRes(raw);
+    renderMobile(parsed);
+    await save(parsed, raw);
+    showToast('✅ Evolução gerada!');
+  } catch(err) {
+    console.error(err);
+    showToast('❌ ' + (err.message || 'Erro ao processar'));
+  }
+
+  showProc(false);
+  resetRec();
 }
 
 // ── GRAVADOR INTERNO ──────────────────────────────────
