@@ -1013,14 +1013,15 @@ async function onUpload(e) {
     const parsed = parseRes(raw);
     renderMobile(parsed);
     await save(parsed, raw);
+    showProc(false);
+    resetRec();
     showToast('✅ Evolução gerada!');
   } catch(err) {
     console.error(err);
+    showProc(false);
+    resetRec();
     showToast('❌ ' + (err.message || 'Erro ao processar'));
   }
-
-  showProc(false);
-  resetRec();
 }
 
 // ── GRAVADOR INTERNO ──────────────────────────────────
