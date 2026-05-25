@@ -1044,8 +1044,14 @@ async function startRec() {
       if (blob.size < 1000) { toast('Gravação muito curta'); resetRec(); return; }
       await process(async () => {
         setProc('Enviando áudio para IA...','Processando a consulta gravada');
-        const b64 = await toB64(blob);
-        return await geminiAudio(b64, blob.type, 'gravacao.webm');
+        // Envia para o Worker Cloudflare
+        const formData = new FormData();
+        formData.append('action', 'transcribe');
+        formData.append('audio', blob, 'gravacao.webm');
+        const res  = await fetch(WORKER_URL, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        return data.evolution || '';
       });
     };
     mr.start(1000);
