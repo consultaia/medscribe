@@ -1017,7 +1017,7 @@ async function onUpload(e) {
   if (f.size > 200 * 1024 * 1024) { toast('Arquivo muito grande. Máx 200MB.'); return; }
 
   showProc(true);
-  setProc('Preparando áudio...', 'Comprimindo para envio mais rápido');
+  setProc('Preparando envio...', 'Calculando tamanho do arquivo');
 
   try {
     // 1. Comprime se necessário (reduz de ~28MB para ~4MB)
@@ -1078,34 +1078,9 @@ async function onUpload(e) {
   }
 }
 
-// Comprime áudio para opus 64kbps se o browser suportar
+// Sem compressão — envia direto ao Storage
 async function comprimirAudio(file) {
-  // webm/ogg já são comprimidos — retorna direto
-  if (file.type.includes('webm') || file.type.includes('ogg')) return file;
-  // Tenta recodificar via AudioContext
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    return await new Promise((resolve) => {
-      const dest = audioCtx.createMediaStreamDestination();
-      const src  = audioCtx.createBufferSource();
-      src.buffer = audioBuffer;
-      src.connect(dest);
-      const mimes = ['audio/webm;codecs=opus','audio/webm','audio/ogg'];
-      const mime  = mimes.find(m => MediaRecorder.isTypeSupported(m)) || '';
-      if (!mime) { resolve(file); return; }
-      const rec    = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: 64000 });
-      const chunks = [];
-      rec.ondataavailable = ev => chunks.push(ev.data);
-      rec.onstop = () => resolve(new Blob(chunks, { type: mime }));
-      rec.start(); src.start();
-      src.onended = () => rec.stop();
-    });
-  } catch(e) {
-    console.warn('Compressão falhou, enviando original:', e.message);
-    return file; // fallback seguro
-  }
+  return file;
 }
 
 // ── GRAVADOR INTERNO ──────────────────────────────────
