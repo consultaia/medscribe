@@ -132,6 +132,20 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 </style>
 </head>
 <body>
+<div id="errBox" style="display:none;position:fixed;inset:0;background:#1a0000;color:#ff6666;padding:20px;z-index:9999;font-family:monospace;font-size:13px;overflow:auto;white-space:pre-wrap"></div>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  var b = document.getElementById('errBox');
+  b.style.display = 'block';
+  b.textContent = 'ERRO JS:\n' + msg + '\nLinha: ' + line + '\n' + (err ? err.stack : '');
+  return false;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  var b = document.getElementById('errBox');
+  b.style.display = 'block';
+  b.textContent += '\nPROMISE REJEITADA:\n' + (e.reason ? e.reason.stack || e.reason : e);
+});
+</script>
 
 <!-- LANDING PAGE -->
 <div id="landingPage" style="display:none;position:fixed;inset:0;overflow-y:auto;background:#04080f;z-index:90">
@@ -510,25 +524,3 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
       text-align: center;
       padding: 32px 24px;
       border-top: 1px solid rgba(255,255,255,0.05);
-      font-size: .78rem;
-      color: #3a5070;
-    }
-
-    .lp-divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.1), transparent);
-      margin: 0 24px;
-    }
-  </style>
-
-  <!-- NAV -->
-  <nav class="lp-nav">
-    <div class="lp-logo">Med<span>Scribe</span></div>
-    <button class="lp-nav-btn" onclick="showLogin()">Entrar</button>
-  </nav>
-
-  <!-- HERO -->
-  <section class="lp-hero">
-    <div class="lp-badge">🎙️ IA Médica — Lançamento</div>
-    <h1 class="lp-h1">Grave a consulta.<br><em>A evolução escreve sozinha.</em></h1>
-    <p class="lp-sub">MedScribe transforma o áudio da sua consulta em evolução médica completa — SOAP, CI
