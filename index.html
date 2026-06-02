@@ -368,6 +368,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
       <div class="photos-preview" id="prevFotosAps"></div>
       <button id="btnLaudoAps" style="display:none" class="bcopy" onclick="gerarLaudoAps()">🔬 Gerar Laudo dos Exames</button>
       <div id="mResult"></div>
+      <button id="btnLimparAps" style="display:none;width:100%;max-width:360px;padding:11px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:4px" onclick="limparTelaAps()">🗑️ Limpar tela</button>
       <div id="relatAps" style="display:none" class="relat-section">
         <div class="relat-title">📄 Gerar Relatórios</div>
         <div class="relat-btns">
@@ -444,6 +445,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
         <button class="btn-enter" style="max-width:360px;width:100%;margin-top:4px" onclick="gerarEvolucaoDiaria()">📅 Gerar Evolução Diária</button>
       </div>
       <div id="mResultHosp"></div>
+      <button id="btnLimparHosp" style="display:none;width:100%;max-width:360px;padding:11px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:4px" onclick="limparTelaHosp()">🗑️ Limpar tela</button>
     </div>
 
   </div>
@@ -766,6 +768,7 @@ async function processAudio(file, profile) {
     renderMobile(parsed, profile);
     await save(parsed, raw, profile);
     document.getElementById('relatAps').style.display = profile==='aps' ? 'block' : 'none';
+    document.getElementById('btnLimparAps').style.display = 'block';
     toast('✅ Evolução gerada!');
   } catch(e) { console.error(e); toast('❌ '+(e.message||'Erro ao processar')); }
   showProc(false);
@@ -806,6 +809,7 @@ async function gerarAdmissao() {
     renderMobileHosp(parsed, 'Admissão Hospitalar');
     await save({evolution:evolucao,cid:'',condutas:''}, evolucao, 'hosp');
     toast('✅ Evolução de admissão gerada!');
+    document.getElementById('btnLimparHosp').style.display = 'block';
   } catch(e) { console.error(e); toast('❌ '+(e.message||'Erro ao processar')); }
   showProc(false);
 }
@@ -839,6 +843,7 @@ async function gerarEvolucaoDiaria() {
     renderMobileHosp(parsed, 'Evolução Diária');
     await save({evolution:evolucao,cid:'',condutas:''}, evolucao, 'hosp');
     toast('✅ Evolução diária gerada!');
+    document.getElementById('btnLimparHosp').style.display = 'block';
   } catch(e) { console.error(e); toast('❌ '+(e.message||'Erro ao processar')); }
   showProc(false);
 }
@@ -982,6 +987,31 @@ async function save(p, raw, profile) {
   } catch(e) { console.warn('save:',e.message); }
 }
 
+// ── EXCLUSÃO AUTOMÁTICA 5 DIAS ───────────────────────
+async function excluirAntigos() {
+  if (!me) return;
+  try {
+    const limite = new Date();
+    limite.setDate(limite.getDate() - 5);
+    const snap = await db.collection('consultations')
+      .where('userId','==',me.uid)
+      .where('createdAt','<', firebase.firestore.Timestamp.fromDate(limite))
+      .get();
+    const batch = db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    if (!snap.empty) await batch.commit();
+  } catch(e) { console.warn('excluirAntigos:', e.message); }
+}
+
+async function excluirConsulta(docId, el) {
+  if (!confirm('Excluir esta evolução?')) return;
+  try {
+    await db.collection('consultations').doc(docId).delete();
+    el.remove();
+    toast('🗑️ Evolução excluída');
+  } catch(e) { toast('Erro ao excluir'); }
+}
+
 async function loadHist() {
   const el = document.getElementById('histList');
   el.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>Carregando...</p></div>';
@@ -994,11 +1024,34 @@ async function loadHist() {
       const d=doc.data(), dt=d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleString('pt-BR'):'—';
       const profile = d.profile||'aps';
       const div=document.createElement('div'); div.className='hi-item';
-      div.innerHTML=`<div class="hi-time">${dt} <span class="hi-badge ${profile}">${profile==='aps'?'APS':'Hospitalar'}</span></div><div class="hi-pre">${esc((d.evolution||'').substring(0,120))}…</div>`;
+      div.innerHTML=`<div class="hi-time" style="justify-content:space-between">${dt} <span class="hi-badge ${profile}">${profile==='aps'?'APS':'Hospitalar'}</span><button onclick="event.stopPropagation();excluirConsulta('${doc.id}',this.closest('.hi-item'))" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:.75rem;padding:0 4px">🗑️</button></div><div class="hi-pre">${esc((d.evolution||'').substring(0,120))}…</div>`;
       div.onclick=()=>{ renderDesk(d,false); goTab('evol'); };
       el.appendChild(div);
     });
   } catch(e) { el.innerHTML='<div class="empty"><p>Erro ao carregar</p></div>'; }
+}
+
+function limparTelaAps() {
+  document.getElementById('mResult').innerHTML = '';
+  document.getElementById('relatAps').style.display = 'none';
+  document.getElementById('btnLimparAps').style.display = 'none';
+  lastEvolution = '';
+  apsFotos = [];
+  document.getElementById('prevFotosAps').innerHTML = '';
+  document.getElementById('btnLaudoAps').style.display = 'none';
+  resetRecAps();
+}
+
+function limparTelaHosp() {
+  document.getElementById('mResultHosp').innerHTML = '';
+  document.getElementById('btnLimparHosp').style.display = 'none';
+  lastEvolution = '';
+  hospFotos = []; hospFotosEvol = [];
+  hospFiles = { audAdm:null, regulacao:null, audEvol:null };
+  document.getElementById('prevFotosHosp').innerHTML = '';
+  document.getElementById('prevFotosHospEvol').innerHTML = '';
+  document.getElementById('hospFileStatus').style.display = 'none';
+  document.getElementById('hospEvolStatus').style.display = 'none';
 }
 
 function goTab(t) {
@@ -1006,7 +1059,7 @@ function goTab(t) {
   document.getElementById('pHist').style.display=t==='hist'?'block':'none';
   document.getElementById('tEvol').className='tab'+(t==='evol'?' on':'');
   document.getElementById('tHist').className='tab'+(t==='hist'?' on':'');
-  if(t==='hist') loadHist();
+  if(t==='hist') { excluirAntigos(); loadHist(); }
 }
 
 function showProc(on,msg,sub){
