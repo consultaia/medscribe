@@ -1024,7 +1024,9 @@ async function loadHist() {
       const d=doc.data(), dt=d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleString('pt-BR'):'—';
       const profile = d.profile||'aps';
       const div=document.createElement('div'); div.className='hi-item';
-      div.innerHTML=`<div class="hi-time" style="justify-content:space-between">${dt} <span class="hi-badge ${profile}">${profile==='aps'?'APS':'Hospitalar'}</span><button onclick="event.stopPropagation();excluirConsulta('${doc.id}',this.closest('.hi-item'))" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:.75rem;padding:0 4px">🗑️</button></div><div class="hi-pre">${esc((d.evolution||'').substring(0,120))}…</div>`;
+      const diasRestantes = d.createdAt ? Math.max(0, 5 - Math.floor((Date.now() - d.createdAt.seconds*1000) / 86400000)) : 5;
+      const expTag = diasRestantes <= 1 ? `<span style="color:var(--red);font-size:.65rem;font-weight:700">⏳ expira hoje</span>` : `<span style="color:var(--muted);font-size:.65rem">⏳ expira em ${diasRestantes}d</span>`;
+      div.innerHTML=`<div class="hi-time" style="justify-content:space-between">${dt} <span class="hi-badge ${profile}">${profile==='aps'?'APS':'Hospitalar'}</span><button onclick="event.stopPropagation();excluirConsulta('${doc.id}',this.closest('.hi-item'))" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:.75rem;padding:0 4px">🗑️</button></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${expTag}</div><div class="hi-pre">${esc((d.evolution||'').substring(0,120))}…</div>`;
       div.onclick=()=>{ renderDesk(d,false); goTab('evol'); };
       el.appendChild(div);
     });
