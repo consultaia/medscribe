@@ -361,9 +361,11 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
       <div class="chip"><div class="dot" id="sDotAps"></div><span id="sMsgAps">Pressione para iniciar</span></div>
       <div class="divider"><div class="div-line"></div><span class="div-txt">fotos de exames</span><div class="div-line"></div></div>
       <div class="upload-wrap">
-        <label class="ulbl purple" for="fFotosAps">📷 Fotografar exames (gera laudo)</label>
+        <label class="ulbl purple" for="fFotosAps">📷 Fotos de exames (gera laudo)</label>
         <input type="file" id="fFotosAps" accept="image/*" multiple style="display:none" onchange="onFotosAps(event)">
-        <div class="uhint">Selecione uma ou mais fotos de exames laboratoriais</div>
+        <label class="ulbl purple" for="fPdfsAps" style="margin-top:4px">📄 PDFs de exames (gera laudo)</label>
+        <input type="file" id="fPdfsAps" accept="application/pdf" multiple style="display:none" onchange="onPdfsAps(event)">
+        <div class="uhint">Fotos ou PDFs de exames laboratoriais e de imagem</div>
       </div>
       <div class="photos-preview" id="prevFotosAps"></div>
       <button id="btnLaudoAps" style="display:none" class="bcopy" onclick="gerarLaudoAps()">🔬 Gerar Laudo dos Exames</button>
@@ -426,6 +428,8 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
         <div class="upload-wrap">
           <label class="ulbl purple" for="fExamesAdm">📷 Fotos de exames (lab + imagem)</label>
           <input type="file" id="fExamesAdm" accept="image/*" multiple style="display:none" onchange="onFotosHosp(event)">
+          <label class="ulbl purple" for="fPdfsAdm" style="margin-top:4px">📄 PDFs de exames</label>
+          <input type="file" id="fPdfsAdm" accept="application/pdf" multiple style="display:none" onchange="onPdfsHosp(event)">
         </div>
         <div class="photos-preview" id="prevFotosHosp"></div>
         <div id="hospFileStatus" style="font-size:.75rem;color:var(--green);text-align:center;display:none"></div>
@@ -439,6 +443,8 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
         <div class="upload-wrap">
           <label class="ulbl purple" for="fExamesEvol">📷 Fotos de exames do dia</label>
           <input type="file" id="fExamesEvol" accept="image/*" multiple style="display:none" onchange="onFotosHospEvol(event)">
+          <label class="ulbl purple" for="fPdfsEvol" style="margin-top:4px">📄 PDFs de exames do dia</label>
+          <input type="file" id="fPdfsEvol" accept="application/pdf" multiple style="display:none" onchange="onPdfsHospEvol(event)">
         </div>
         <div class="photos-preview" id="prevFotosHospEvol"></div>
         <div id="hospEvolStatus" style="font-size:.75rem;color:var(--green);text-align:center;display:none"></div>
@@ -545,6 +551,9 @@ let hospFiles  = { audAdm:null, regulacao:null, audEvol:null };
 let hospFotos  = [];
 let hospFotosEvol = [];
 let apsFotos   = [];
+let apsPdfs    = [];
+let hospPdfs   = [];
+let hospPdfsEvol = [];
 let lastEvolution = '';
 
 auth.onAuthStateChanged(async u => {
@@ -708,11 +717,30 @@ function removeFoto(arrName, idx, previewId) {
   if (arrName==='apsFotos') document.getElementById('btnLaudoAps').style.display = apsFotos.length>0?'block':'none';
 }
 
+function onPdfsAps(e) {
+  const files = Array.from(e.target.files); e.target.value='';
+  apsPdfs = [...apsPdfs, ...files];
+  document.getElementById('btnLaudoAps').style.display = (apsFotos.length+apsPdfs.length)>0 ? 'block' : 'none';
+  toast(`📄 ${apsPdfs.length} PDF(s) carregado(s)`);
+}
+
+function onPdfsHosp(e) {
+  hospPdfs = [...hospPdfs, ...Array.from(e.target.files)]; e.target.value='';
+  updateHospStatus();
+  toast(`📄 ${hospPdfs.length} PDF(s) carregado(s)`);
+}
+
+function onPdfsHospEvol(e) {
+  hospPdfsEvol = [...hospPdfsEvol, ...Array.from(e.target.files)]; e.target.value='';
+  updateHospEvolStatus();
+  toast(`📄 ${hospPdfsEvol.length} PDF(s) carregado(s)`);
+}
+
 async function gerarLaudoAps() {
-  if (!apsFotos.length) return;
+  if (!apsFotos.length && !apsPdfs.length) return;
   showProc(true,'Analisando exames...','Extraindo valores e gerando laudos');
   try {
-    const laudo = await analisarFotos(apsFotos);
+    const laudo = await analisarFotos(apsFotos, apsPdfs);
     renderResultCard('laudoAps','🔬 Laudo dos Exames','purple',laudo,'mResult');
     toast('✅ Laudo gerado!');
   } catch(e) { toast('❌ '+e.message); }
@@ -799,8 +827,8 @@ async function gerarAdmissao() {
       dadosRegulacao = await analisarFotoUnica(hospFiles.regulacao, 'regulacao');
     }
 
-    if (hospFotos.length) {
-      laudosExames = await analisarFotos(hospFotos);
+    if (hospFotos.length || hospPdfs.length) {
+      laudosExames = await analisarFotos(hospFotos, hospPdfs);
     }
 
     const evolucao = await gerarEvolucaoHospitalar(transcricao, dadosRegulacao, laudosExames, 'admissao');
@@ -833,8 +861,8 @@ async function gerarEvolucaoDiaria() {
       transcricao = d.evolution||'';
     }
 
-    if (hospFotosEvol.length) {
-      laudosExames = await analisarFotos(hospFotosEvol);
+    if (hospFotosEvol.length || hospPdfsEvol.length) {
+      laudosExames = await analisarFotos(hospFotosEvol, hospPdfsEvol);
     }
 
     const evolucao = await gerarEvolucaoHospitalar(transcricao, '', laudosExames, 'diaria');
@@ -848,12 +876,15 @@ async function gerarEvolucaoDiaria() {
   showProc(false);
 }
 
-async function analisarFotos(fotos) {
+async function analisarFotos(fotos, pdfs=[]) {
   const fd = new FormData();
   fd.append('action','analyze_exams');
   for (let i = 0; i < fotos.length; i++) {
     const comprimida = await compressImage(fotos[i]);
     fd.append(`photo_${i}`, comprimida, comprimida.name||`exam_${i}.jpg`);
+  }
+  for (let i = 0; i < pdfs.length; i++) {
+    fd.append(`pdf_${i}`, pdfs[i], pdfs[i].name||`exam_${i}.pdf`);
   }
   const res  = await fetch(WORKER,{method:'POST',body:fd});
   const data = await res.json();
@@ -1038,7 +1069,7 @@ function limparTelaAps() {
   document.getElementById('relatAps').style.display = 'none';
   document.getElementById('btnLimparAps').style.display = 'none';
   lastEvolution = '';
-  apsFotos = [];
+  apsFotos = []; apsPdfs = [];
   document.getElementById('prevFotosAps').innerHTML = '';
   document.getElementById('btnLaudoAps').style.display = 'none';
   resetRecAps();
@@ -1048,7 +1079,7 @@ function limparTelaHosp() {
   document.getElementById('mResultHosp').innerHTML = '';
   document.getElementById('btnLimparHosp').style.display = 'none';
   lastEvolution = '';
-  hospFotos = []; hospFotosEvol = [];
+  hospFotos = []; hospFotosEvol = []; hospPdfs = []; hospPdfsEvol = [];
   hospFiles = { audAdm:null, regulacao:null, audEvol:null };
   document.getElementById('prevFotosHosp').innerHTML = '';
   document.getElementById('prevFotosHospEvol').innerHTML = '';
