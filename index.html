@@ -705,7 +705,7 @@ function renderFotos(arr, previewId, arrName) {
   el.innerHTML = '';
   arr.forEach((f,i) => {
     const url = URL.createObjectURL(f);
-    el.innerHTML += `<div class="photo-thumb"><img src="${url}" onload="URL.revokeObjectURL('${url}')"><button class="photo-del" onclick="removeFoto('${arrName}',${i},'${previewId}')">✕</button></div>`;
+    el.innerHTML += `<div class="photo-thumb"><img src="${url}"><button class="photo-del" onclick="removeFoto('${arrName}',${i},'${previewId}')">✕</button></div>`;
   });
 }
 function removeFoto(arrName, idx, previewId) {
