@@ -805,6 +805,7 @@ async function processAudio(file, profile) {
     lastEvolution = raw;
     const parsed = parseRes(raw);
     renderMobile(parsed, profile);
+    renderDesk({...parsed, profile}, true);
     await save(parsed, raw, profile);
     document.getElementById('relatAps').style.display = profile==='aps' ? 'block' : 'none';
     document.getElementById('btnLimparAps').style.display = 'block';
@@ -1008,6 +1009,8 @@ function renderResultCard(id, titulo, color, conteudo, container) {
 }
 
 function renderDesk(d, isNew) {
+  // Preenche lastEvolution para permitir gerar relatórios no PC
+  if (d.evolution || d.rawText) lastEvolution = d.rawText || d.evolution || '';
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('resBlock').style.display   = 'block';
   const txt = d.evolution||d.rawText||'';
