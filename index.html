@@ -753,6 +753,12 @@ async function gerarLaudoAps() {
   try {
     const laudo = await analisarFotos(apsFotos, apsPdfs);
     renderResultCard('laudoAps','🔬 Laudo dos Exames','purple',laudo,'mResult');
+    // Mostra no desktop também
+    document.getElementById('resBlock').style.display = 'block';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('extraTitle').textContent = '🔬 Laudo dos Exames';
+    document.getElementById('extraTxt').textContent = laudo;
+    document.getElementById('extraBlock').style.display = 'block';
     toast('✅ Laudo gerado!');
   } catch(e) { toast('❌ '+e.message); }
   showProc(false);
