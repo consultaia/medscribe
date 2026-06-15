@@ -263,7 +263,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
         <li>Perfil APS e Hospitalar</li>
         <li>Consultas ilimitadas</li>
         <li>Laudos de exames por foto</li>
-        <li>Relatório INSS e insumos glicêmicos</li>
+        <li>Relatório INSS, insumos glicêmicos e ficha de referência</li>
         <li>Acesso celular e computador</li>
         <li>Suporte via WhatsApp</li>
       </ul>
@@ -489,6 +489,17 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
               <button class="bs" style="font-size:.76rem;padding:5px 10px" onclick="cpEl('condTxt')">Copiar</button>
             </div>
             <div class="etext" id="condTxt"></div>
+          </div>
+          <div class="card" id="relatDeskBlock" style="display:none">
+            <div class="chdr" style="margin-bottom:12px">
+              <div class="ctitle green">📄 Relatórios</div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button class="bs" onclick="gerarRelatorio('inss')">🏛️ INSS</button>
+              <button class="bs" onclick="gerarRelatorio('glicemia-fita')">🩸 Tiras + Lancetas</button>
+              <button class="bs" onclick="gerarRelatorio('glicemia-kit')">📦 Kit Glicêmico</button>
+              <button class="bs" onclick="gerarRelatorio('referencia')">📋 Ficha de Referência</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1013,6 +1024,9 @@ function renderDesk(d, isNew) {
     document.getElementById('condBlock').style.display = 'block';
   }
   if (isNew) { const b=document.getElementById('nbadge'); if(b){b.style.display='inline-flex'; setTimeout(()=>b.style.display='none',8000);} }
+  // Mostra botões de relatório só para perfil APS
+  const relatDesk = document.getElementById('relatDeskBlock');
+  if (relatDesk) relatDesk.style.display = (d.profile==='aps') ? 'block' : 'none';
 }
 function clearDesk() {
   document.getElementById('resBlock').style.display  = 'none';
