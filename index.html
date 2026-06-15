@@ -933,10 +933,23 @@ async function gerarRelatorio(tipo) {
       'glicemia-kit':'📦 Solicitação de Insumos Glicêmicos (Kit Completo)',
       'referencia':'📋 Ficha de Referência'
     }[tipo]||'📄 Relatório';
-    renderResultCard('relat_'+tipo, titulo, 'green', data.relatorio||'', 'mResult');
+    const relatorio = data.relatorio||'';
+    // Renderiza no mobile
+    renderResultCard('relat_'+tipo, titulo, 'green', relatorio, 'mResult');
+    // Renderiza no desktop também
+    renderRelatDesk(titulo, relatorio);
     toast('✅ Relatório gerado!');
   } catch(e) { toast('❌ '+e.message); }
   showProc(false);
+}
+
+function renderRelatDesk(titulo, conteudo) {
+  // Mostra no bloco extra do desktop
+  document.getElementById('resBlock').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('extraTitle').textContent = titulo;
+  document.getElementById('extraTxt').textContent = conteudo;
+  document.getElementById('extraBlock').style.display = 'block';
 }
 
 function parseRes(txt) {
